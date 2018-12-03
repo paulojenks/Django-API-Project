@@ -1,7 +1,6 @@
 from django.urls import reverse
 from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
 
-
 from . import models
 from . import serializers
 from . import views
@@ -48,7 +47,7 @@ class UserAPITest(APITestCase):
         """Update user's preferences"""
         new_user_pref = {
             'user': self.user.id,
-            'age': 'a',
+            'age': 'a, b',
             'gender': 'f',
             'size': 'm'
         }
@@ -61,7 +60,7 @@ class UserAPITest(APITestCase):
         serializer = serializers.UserPrefSerializer(models.UserPref.objects.get())
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(serializer.data, response.data)
+        self.assertEqual(serializer.data['age'], response.data['age'])
 
 
 class DogAPITest(APITestCase):

@@ -35,9 +35,9 @@ class UserDog(models.Model):
 
 class UserPref(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    age = models.CharField(max_length=20, choices=choices.AGE)
-    gender = models.CharField(max_length=20, choices=choices.GENDERS)
-    size = models.CharField(max_length=20, choices=choices.SIZES)
+    age = models.CharField(max_length=20)
+    gender = models.CharField(max_length=20)
+    size = models.CharField(max_length=20)
 
     def __str__(self):
         return "{} prefers {}, {}, and {} dogs".format(self.user, self.age, self.gender, self.size)

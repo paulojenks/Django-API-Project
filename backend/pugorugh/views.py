@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.http import Http404
 
 from rest_framework import permissions, mixins, generics
 from rest_framework.authentication import TokenAuthentication
@@ -16,7 +17,7 @@ class DogViewSet(ListCreateAPIView):
         url = api/dog/
     """
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = models.Dog.objects.all()
     serializer_class = serializers.DogSerializer
 
@@ -64,7 +65,7 @@ class UserRegisterView(CreateAPIView):
 class UserPrefView(RetrieveUpdateAPIView, mixins.CreateModelMixin):
     """Create, View and Change User's preferences"""
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = models.UserPref.objects.all()
     serializer_class = serializers.UserPrefSerializer
 
@@ -79,11 +80,25 @@ class UserPrefView(RetrieveUpdateAPIView, mixins.CreateModelMixin):
             user_pref = models.UserPref.objects.create(user=user)
         return user_pref
 
+    def put(self, request, *args, **kwargs):
+        serializer = serializers.UserPrefSerializer(data={'id': self.request.user.id,
+                                                          'user': self.request.user.id,
+                                                          'age': self.request.data['age'],
+                                                          'gender': self.request.data['gender'],
+                                                          'size': self.request.data['size']})
+        if serializer.is_valid():
+            user_prefs = self.get_object()
+            user_prefs.age = self.request.data['age']
+            user_prefs.gender = self.request.data['gender']
+            user_prefs.size = self.request.data['size']
+            user_prefs.save()
+        return Response(serializer.data)
+
 
 class NextDogView(RetrieveAPIView):
     """Gets next dog of the same status"""
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     queryset = models.Dog.objects.all()
     serializer_class = serializers.DogSerializer
@@ -98,12 +113,15 @@ class NextDogView(RetrieveAPIView):
     def get_object(self):
         """Gets next dog after current dog"""
         pk = self.kwargs['pk']
-        queryset = self.get_queryset().filter(id__gt=int(pk))
+        queryset = self.get_queryset()
 
         if len(queryset) == 1:
             dog = queryset[0]
         else:
             dog = self.get_queryset().first()
+
+        if not dog:
+            raise Http404
         return dog
 
 
