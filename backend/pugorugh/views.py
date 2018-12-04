@@ -107,8 +107,15 @@ class NextDogView(RetrieveAPIView):
         """Filter dogs by pk and status"""
         status = self.kwargs['status'][0]
         pk = self.kwargs['pk']
-        doggies = self.queryset
-        return doggies.filter(id__gt=pk, userdog__status=status).order_by('pk')
+        user_pref = self.request.user.userpref_set.get()
+
+        dogs = self.queryset.filter(
+            gender__in=user_pref.gender.split(","),
+            size__in=user_pref.size.split(","),
+            age__in=user_pref.ages_as_months(),
+        )
+
+        return dogs.filter(id__gt=pk, userdog__status=status).order_by('pk')
 
     def get_object(self):
         """Gets next dog after current dog"""

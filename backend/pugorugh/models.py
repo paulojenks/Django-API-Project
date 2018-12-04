@@ -39,5 +39,18 @@ class UserPref(models.Model):
     gender = models.CharField(max_length=20)
     size = models.CharField(max_length=20)
 
+    def ages_as_months(self):
+        age_ranges = {
+            'b': range(0, 4),
+            'y': range(4, 12),
+            'a': range(12, 84),
+            's': range(84, 240)
+        }
+        ages = []
+        for x, y in age_ranges.items():
+            if x in self.age:
+                ages.extend(y)
+        return ages
+
     def __str__(self):
         return "{} prefers {}, {}, and {} dogs".format(self.user, self.age, self.gender, self.size)
