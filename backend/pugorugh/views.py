@@ -31,6 +31,9 @@ class DogDetailView(generics.RetrieveAPIView):
 
 
 class UserDogStatusUpdateView(APIView):
+    queryset = models.UserDog.objects.all()
+    serializer_class = serializers.UserDogSerializer
+
     """Create or Update UserDog status
         'l' = liked
         'd' = disliked
@@ -100,7 +103,7 @@ class NextDogView(RetrieveAPIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
-    queryset = models.Dog.objects.all()
+    queryset = models.UserDog.objects.all()
     serializer_class = serializers.DogSerializer
 
     def get_queryset(self):
@@ -109,23 +112,26 @@ class NextDogView(RetrieveAPIView):
         pk = self.kwargs['pk']
         user_pref = self.request.user.userpref_set.get()
 
-        dogs = self.queryset.filter(
+        queries = models.Dog.objects.filter(
             gender__in=user_pref.gender.split(","),
             size__in=user_pref.size.split(","),
             age__in=user_pref.ages_as_months(),
         )
 
-        return dogs.filter(id__gt=pk, userdog__status=status).order_by('pk')
+        for dog in queries:
+            obj, exists = models.UserDog.objects.get_or_create(
+                user=self.request.user,
+                dog=dog,
+                defaults={'user': self.request.user, 'dog': dog, 'status': 'u'})
+            obj.save()
+
+        return queries.filter(userdog__user_id=self.request.user.id, userdog__status=status).order_by('pk')
 
     def get_object(self):
         """Gets next dog after current dog"""
         pk = self.kwargs['pk']
-        queryset = self.get_queryset()
 
-        if len(queryset) == 1:
-            dog = queryset[0]
-        else:
-            dog = self.get_queryset().first()
+        dog = self.get_queryset().filter(id__gt=int(pk)).first()
 
         if not dog:
             raise Http404
